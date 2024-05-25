@@ -35,4 +35,48 @@ const saveCategory = async (msg) => {
   bot.sendMessage(msg.from.id, "Added new category.");
 };
 
-module.exports = { addCategory, saveCategory };
+const getAllCategories = async (chatId) => {
+  const user = await User.findOne({ chatId });
+
+  const categories = await Category.find({
+    _id: { $in: user.category },
+  });
+  // console.log(categories);
+
+  const list = categories.map((category) => [
+    {
+      text: category.name,
+      callback_data: JSON.stringify({
+        type: ACTION_TYPE.ADD_EXPENSE,
+        ct_id: category._id,
+      }),
+    },
+  ]);
+
+  const inline_keyboard = [
+    ...list,
+    [
+      {
+        text: "Yangi kategoriya qo'shish",
+        callback_data: JSON.stringify({
+          type: ACTION_TYPE.ADD_CATEGORY,
+        }),
+      },
+    ],
+  ];
+
+  bot.sendMessage(
+    chatId,
+    categories.length
+      ? "Kategoriyalar ro'yxati:"
+      : "Kategoriyalar ro'yxati hozircha bo'sh.",
+    {
+      reply_markup: {
+        remove_keyboard: true,
+        inline_keyboard,
+      },
+    }
+  );
+};
+
+module.exports = { addCategory, saveCategory, getAllCategories };

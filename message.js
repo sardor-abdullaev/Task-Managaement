@@ -4,6 +4,7 @@ const { saveUser } = require("./controller/user.controller");
 const {
   addCategory,
   saveCategory,
+  getAllCategories,
 } = require("./controller/category.controller");
 
 bot.on("message", async (msg) => {
@@ -19,6 +20,9 @@ bot.on("message", async (msg) => {
       break;
     case "/addcategory":
       addCategory(chatId);
+      break;
+    case "/category":
+      getAllCategories(chatId);
       break;
   }
 
