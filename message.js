@@ -5,6 +5,7 @@ const {
   addCategory,
   saveCategory,
   getAllCategories,
+  updateCategory,
 } = require("./controller/category.controller");
 
 bot.on("message", async (msg) => {
@@ -30,5 +31,12 @@ bot.on("message", async (msg) => {
     if (user && user.action == "add_category") {
       saveCategory(msg);
     }
+    if (user && user.action.startsWith("edit_ct-")) {
+      categoryId = user.action.split("-")[1];
+      updateCategory(chatId, categoryId, msg.text);
+    }
   }
+
+  user.action = "category";
+  await user.save();
 });

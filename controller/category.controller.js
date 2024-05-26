@@ -1,6 +1,7 @@
 const { bot } = require("../bot");
 const User = require("../model/user.model");
 const Category = require("../model/category.model");
+const { ACTION_TYPE } = require("../helpers/action_type");
 
 const addCategory = async (chatId) => {
   const user = await User.findOne({ chatId });
@@ -24,7 +25,8 @@ const saveCategory = async (msg) => {
   }
 
   //   2.Attach category to user
-  const user = await User.findOne({ chatId: msg.from.id });
+  const chatId = msg.from.id;
+  const user = await User.findOne({ chatId });
   await User.findByIdAndUpdate(user._id, {
     action: "category",
     category: user.category.includes(categoryId)
@@ -32,7 +34,8 @@ const saveCategory = async (msg) => {
       : [...user.category, categoryId],
   });
 
-  bot.sendMessage(msg.from.id, "Added new category.");
+  bot.sendMessage(chatId, "Yangi kategoriya qo'shildi.");
+  getAllCategories(chatId);
 };
 
 const getAllCategories = async (chatId) => {
@@ -47,7 +50,7 @@ const getAllCategories = async (chatId) => {
     {
       text: category.name,
       callback_data: JSON.stringify({
-        type: ACTION_TYPE.ADD_EXPENSE,
+        type: ACTION_TYPE.SHOW_CATEGORY,
         ct_id: category._id,
       }),
     },
@@ -57,7 +60,7 @@ const getAllCategories = async (chatId) => {
     ...list,
     [
       {
-        text: "Yangi kategoriya qo'shish",
+        text: "➕Yangi kategoriya qo'shish",
         callback_data: JSON.stringify({
           type: ACTION_TYPE.ADD_CATEGORY,
         }),
@@ -79,4 +82,108 @@ const getAllCategories = async (chatId) => {
   );
 };
 
-module.exports = { addCategory, saveCategory, getAllCategories };
+const getCategory = async (chatId, categoryId) => {
+  const user = await User.findOne({ chatId });
+  const category = await Category.findById(categoryId);
+  const tasks = [];
+
+  if (!user.category.includes(categoryId)) {
+    bot.sendMessage(
+      chatId,
+      `${category.name} kategoriya topilmadi.\n /addcategory 'message' orqali qayta qo'shiishingiz mumkin.`
+    );
+    return;
+  }
+
+  const list = [];
+
+  const inline_keyboard = [
+    ...list,
+    [
+      {
+        text: "📝Kategoriyani tahrirlash",
+        callback_data: JSON.stringify({
+          type: ACTION_TYPE.EDIT_CATEGORY,
+          ct_id: categoryId,
+        }),
+      },
+      {
+        text: "🗑Kategoriyani o'chirish",
+        callback_data: JSON.stringify({
+          type: ACTION_TYPE.DELETE_CATEGORY,
+          ct_id: categoryId,
+        }),
+      },
+    ],
+    [
+      {
+        text: "➕Yangi vazifa qo'shish",
+        callback_data: JSON.stringify({
+          type: ACTION_TYPE.ADD_TASK,
+          ct_id: categoryId,
+        }),
+      },
+    ],
+  ];
+
+  bot.sendMessage(
+    chatId,
+    `${category.name} kategoriyadagi vazifalar ${
+      tasks.length ? ":" : "hozircha bo'sh"
+    }`,
+    {
+      reply_markup: {
+        remove_keyboard: true,
+        inline_keyboard,
+      },
+    }
+  );
+};
+
+const editCategory = async (chatId, categoryId, msgId = 0) => {
+  const category = await Category.findById(categoryId);
+  const user = await User.findOne({ chatId });
+  user.action = `edit_ct-${categoryId}`;
+  await user.save();
+
+  if (msgId) {
+    bot.deleteMessage(chatId, msgId);
+  }
+  bot.sendMessage(chatId, `${category.name} kategoriyaga yangi nom kiriting:`);
+};
+
+const updateCategory = async (chatId, categoryId, categoryName) => {
+  const category = await Category.findOne({ name: categoryName });
+  if (category) {
+    bot.sendMessage(
+      chatId,
+      `${categoryName} kategoriya allaqachon kiritilgan!`
+    );
+    return;
+  }
+  await Category.findByIdAndUpdate(categoryId, { name: categoryName });
+  bot.sendMessage(chatId, "Kategoriya yangilandi!");
+  getAllCategories(chatId);
+};
+
+const deleteCategory = async (chatId, categoryId, msgId) => {
+  const user = await User.findOne({ chatId });
+
+  user.category = user.category.filter((catEl) => catEl != categoryId);
+  await user.save();
+
+  bot.deleteMessage(chatId, msgId);
+  bot.sendMessage(chatId, "Kategoriya o'chirildi!");
+  getAllCategories(chatId);
+};
+
+module.exports = {
+  addCategory,
+  saveCategory,
+  getAllCategories,
+  getCategory,
+  deleteCategory,
+  editCategory,
+  updateCategory,
+  deleteCategory,
+};
