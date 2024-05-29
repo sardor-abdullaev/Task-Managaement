@@ -7,6 +7,7 @@ const {
   getAllCategories,
   updateCategory,
 } = require("./controller/category.controller");
+const { addTask } = require("./controller/task.controller");
 
 bot.on("message", async (msg) => {
   const { first_name, last_name, id: chatId } = msg.from;
@@ -25,6 +26,8 @@ bot.on("message", async (msg) => {
     case "/category":
       getAllCategories(chatId);
       break;
+    case "/addtask":
+      addTask(chatId);
   }
 
   if (msg.text && !msg.text.startsWith("/")) {

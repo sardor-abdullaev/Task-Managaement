@@ -35,6 +35,11 @@ const taskSchema = new mongoose.Schema({
       },
     },
   },
+  user: {
+    type: mongoose.Types.ObjectId,
+    ref: "User",
+    required: [true, "Task must belong to a user"],
+  },
   createdAt: { type: Date, default: Date.now(), select: false },
 });
 
