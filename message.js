@@ -7,7 +7,7 @@ const {
   getAllCategories,
   updateCategory,
 } = require("./controller/category.controller");
-const { addTask } = require("./controller/task.controller");
+const { addTask, add_task_next } = require("./controller/task.controller");
 
 bot.on("message", async (msg) => {
   const { first_name, last_name, id: chatId } = msg.from;
@@ -31,15 +31,18 @@ bot.on("message", async (msg) => {
   }
 
   if (msg.text && !msg.text.startsWith("/")) {
-    if (user && user.action == "add_category") {
+    if (user.action == "add_category") {
       saveCategory(msg);
     }
-    if (user && user.action.startsWith("edit_ct-")) {
+    if (user.action.startsWith("edit_ct-")) {
       categoryId = user.action.split("-")[1];
       updateCategory(chatId, categoryId, msg.text);
     }
+    if (user.action.includes("new_task-")) {
+      add_task_next(chatId, msg.text, user.action.split("-")[1]);
+    }
   }
 
-  user.action = "category";
+  user && (user.action = "category");
   await user.save();
 });

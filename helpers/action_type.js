@@ -4,4 +4,6 @@ exports.ACTION_TYPE = {
   EDIT_CATEGORY: "ec",
   DELETE_CATEGORY: "dc",
   ADD_TASK: "at",
+  SHOW_TASK: "sht",
+  CHOOSE_TASK_STATUS: "chts",
 };

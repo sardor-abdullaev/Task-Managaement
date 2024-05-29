@@ -1,7 +1,9 @@
-const { bot } = require("../bot");
 const User = require("../model/user.model");
 const Category = require("../model/category.model");
+const Task = require("../model/task.model");
+
 const { ACTION_TYPE } = require("../helpers/action_type");
+const { bot } = require("../bot");
 
 const addCategory = async (chatId) => {
   const user = await User.findOne({ chatId });
@@ -85,7 +87,6 @@ const getAllCategories = async (chatId) => {
 const getCategory = async (chatId, categoryId) => {
   const user = await User.findOne({ chatId });
   const category = await Category.findById(categoryId);
-  const tasks = [];
 
   if (!user.category.includes(categoryId)) {
     bot.sendMessage(
@@ -95,7 +96,20 @@ const getCategory = async (chatId, categoryId) => {
     return;
   }
 
-  const list = [];
+  const tasks = await Task.find({
+    user: user._id,
+    category: categoryId,
+  });
+  console.log(tasks);
+  const list = tasks.map((task) => [
+    {
+      text: task.title,
+      callback_data: JSON.stringify({
+        type: ACTION_TYPE.SHOW_TASK,
+        task_id: task._id,
+      }),
+    },
+  ]);
 
   const inline_keyboard = [
     ...list,
