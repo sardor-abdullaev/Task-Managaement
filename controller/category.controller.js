@@ -183,6 +183,13 @@ const updateCategory = async (chatId, categoryId, categoryName) => {
 const deleteCategory = async (chatId, categoryId, msgId) => {
   const user = await User.findOne({ chatId });
 
+  const tasks = await Task.find({ category: categoryId }).select(["id"]);
+  await Promise.all(
+    tasks.map(async (task) => {
+      await Task.findOneAndDelete(task);
+    })
+  );
+
   user.category = user.category.filter((catEl) => catEl != categoryId);
   await user.save();
 

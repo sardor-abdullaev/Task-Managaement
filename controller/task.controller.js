@@ -42,7 +42,7 @@ const steps = {
   },
   description: {
     action: "new_task-deadline",
-    text: "Vazifa deadline vaqtini kiriting",
+    text: "Vazifa deadline vaqtini YYYY-MM-DDTHH:mm:ss formatda kiriting:\nNamuna: 2024-05-29T13:51:50",
   },
   deadline: {
     action: "new_task-priority",
@@ -50,15 +50,17 @@ const steps = {
   },
 };
 
-const inline_keyboard = ["critical", "high", "medium", "low"].map((status) => [
-  {
-    text: status,
-    callback_data: JSON.stringify({
-      type: ACTION_TYPE.CHOOSE_TASK_STATUS,
-      status,
-    }),
-  },
-]);
+const inline_keyboard = ["critical", "high", "medium", "low"].map(
+  (priority) => [
+    {
+      text: priority,
+      callback_data: JSON.stringify({
+        type: ACTION_TYPE.CHOOSE_TASK_PRIORITY,
+        priority,
+      }),
+    },
+  ]
+);
 
 const add_task_next = async (chatId, value, slug, categoryId = null) => {
   const user = await User.findOne({ chatId });
@@ -94,7 +96,7 @@ const add_task_next = async (chatId, value, slug, categoryId = null) => {
           //     {
           //       text: "critical",
           //       callback_data: JSON.stringify({
-          //         type: ACTION_TYPE.CHOOSE_TASK_STATUS,
+          //         type: ACTION_TYPE.CHOOSE_TASK_PRIORITY,
           //         status: "critical",
           //       }),
           //     },
@@ -103,7 +105,7 @@ const add_task_next = async (chatId, value, slug, categoryId = null) => {
           //     {
           //       text: "high",
           //       callback_data: JSON.stringify({
-          //         type: ACTION_TYPE.CHOOSE_TASK_STATUS,
+          //         type: ACTION_TYPE.CHOOSE_TASK_PRIORITY,
           //         status: "high",
           //       }),
           //     },
@@ -112,7 +114,7 @@ const add_task_next = async (chatId, value, slug, categoryId = null) => {
           //     {
           //       text: "medium",
           //       callback_data: JSON.stringify({
-          //         type: ACTION_TYPE.CHOOSE_TASK_STATUS,
+          //         type: ACTION_TYPE.CHOOSE_TASK_PRIORITY,
           //         status: "medium",
           //       }),
           //     },
@@ -121,7 +123,7 @@ const add_task_next = async (chatId, value, slug, categoryId = null) => {
           //     {
           //       text: "low",
           //       callback_data: JSON.stringify({
-          //         type: ACTION_TYPE.CHOOSE_TASK_STATUS,
+          //         type: ACTION_TYPE.CHOOSE_TASK_PRIORITY,
           //         status: "low",
           //       }),
           //     },
@@ -139,10 +141,125 @@ const add_task_next = async (chatId, value, slug, categoryId = null) => {
 };
 
 const getTask = async (chatId, taskId) => {
-  const task = await Task.findById(taskId);
-  console.log(task);
-  bot.sendMessage(chatId, `Title: <b>${task.title}</b>`, {
-    parse_mode: "HTML",
+  const task = await Task.findById(taskId).populate("category");
+  // console.log(task);
+  bot.sendMessage(
+    chatId,
+    `Title: <b>${task.title}</b>\Category: <b>${task.category.name}</b>\Description: <b>${task.description}</b>\Priority: <b>${task.priority}</b>\nStatus: <b>${task.status}\nDeadline: <b>${task.deadline}</b></b>`,
+    {
+      parse_mode: "HTML",
+      reply_markup: {
+        remove_keyboard: true,
+        inline_keyboard: [
+          [
+            {
+              text: "📝Tahrirlash",
+              callback_data: JSON.stringify({
+                type: ACTION_TYPE.EDIT_TASK,
+                task_id: taskId,
+              }),
+            },
+            {
+              text: "🗑O'chirish",
+              callback_data: JSON.stringify({
+                type: ACTION_TYPE.DELETE_TASK,
+                task_id: taskId,
+              }),
+            },
+          ],
+        ],
+      },
+    }
+  );
+};
+
+const deleteTask = async (chatId, taskId, msgId) => {
+  bot.deleteMessage(chatId, msgId);
+  await Task.findByIdAndDelete(taskId);
+  bot.sendMessage(chatId, "Vazifa o'chirildi.");
+};
+
+const editTask = async (chatId, taskId) => {
+  const user = await User.findOne({ chatId });
+  user.action = `edit_task-${taskId}`;
+  await user.save();
+
+  const fields = ["title", "description", "priority", "status", "deadline"].map(
+    (field) => [
+      {
+        text: field,
+        callback_data: JSON.stringify({
+          type: ACTION_TYPE.EDIT_TASK_FIELD,
+          // tid: taskId,
+          field,
+          //Error: ETELEGRAM: 400 Bad Request: BUTTON_DATA_INVALID
+          //that's why we use user.action
+        }),
+      },
+    ]
+  );
+
+  bot.sendMessage(chatId, "Qaysi maydonni tahrir qilishni tanlang:", {
+    reply_markup: {
+      inline_keyboard: [
+        ...fields,
+        user.category.length > 1
+          ? [
+              {
+                text: "category",
+                callback_data: JSON.stringify({
+                  type: ACTION_TYPE.EDIT_TASK_FIELD,
+                  field: "category",
+                }),
+              },
+            ]
+          : [],
+      ],
+    },
   });
 };
-module.exports = { addTask, add_task_next, getTask };
+
+const inline_keyboardPriority = ["critical", "high", "medium", "low"].map(
+  (priority) => [
+    {
+      text: priority,
+      callback_data: JSON.stringify({
+        type: ACTION_TYPE.UPDATE_TASK_PRIORITY,
+        priority,
+      }),
+    },
+  ]
+);
+
+const editTaskField = async (chatId, field, val = null) => {
+  const user = await User.findOne({ chatId });
+  if (!val) {
+    const taskId = user.action.split("-")[1];
+    console.log("test");
+    if (["title", "description", "deadline"].includes(field)) {
+      user.action = `edit_task-${taskId}-${field}`;
+      await user.save();
+    } else if (field == "priority") {
+      bot.sendMessage(chatId, "Yangilanayotgan priorityni tanlang:", {
+        reply_markup: {
+          remove_keyboard: true,
+          inline_keyboard: inline_keyboardPriority,
+        },
+      });
+    } else if (field == "status") {
+      bot.sendMessage(chatId, "status");
+    } else if (field == "category") {
+      bot.sendMessage(chatId, "status");
+    }
+  } else {
+  }
+};
+
+module.exports = {
+  addTask,
+  add_task_next,
+  getTask,
+  deleteTask,
+  editTask,
+  editTaskField,
+};
