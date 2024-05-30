@@ -7,7 +7,11 @@ const {
   getAllCategories,
   updateCategory,
 } = require("./controller/category.controller");
-const { addTask, add_task_next } = require("./controller/task.controller");
+const {
+  addTask,
+  add_task_next,
+  updateField,
+} = require("./controller/task.controller");
 
 bot.on("message", async (msg) => {
   const { first_name, last_name, id: chatId } = msg.from;
@@ -40,6 +44,9 @@ bot.on("message", async (msg) => {
     }
     if (user.action.includes("new_task-")) {
       add_task_next(chatId, msg.text, user.action.split("-")[1]);
+    }
+    if (user.action.startsWith("edit_task-")) {
+      updateField(chatId, msg.text);
     }
   }
 

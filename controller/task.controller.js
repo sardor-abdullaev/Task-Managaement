@@ -145,7 +145,7 @@ const getTask = async (chatId, taskId) => {
   // console.log(task);
   bot.sendMessage(
     chatId,
-    `Title: <b>${task.title}</b>\Category: <b>${task.category.name}</b>\Description: <b>${task.description}</b>\Priority: <b>${task.priority}</b>\nStatus: <b>${task.status}\nDeadline: <b>${task.deadline}</b></b>`,
+    `Title: <b>${task.title}</b>\nCategory: <b>${task.category.name}</b>\nDescription: <b>${task.description}</b>\nPriority: <b>${task.priority}</b>\nStatus: <b>${task.status}\nDeadline: <b>${task.deadline}</b></b>`,
     {
       parse_mode: "HTML",
       reply_markup: {
@@ -224,35 +224,87 @@ const inline_keyboardPriority = ["critical", "high", "medium", "low"].map(
     {
       text: priority,
       callback_data: JSON.stringify({
-        type: ACTION_TYPE.UPDATE_TASK_PRIORITY,
-        priority,
+        type: ACTION_TYPE.UPDATE_TASK_FIELD,
+        value: priority,
       }),
     },
   ]
 );
 
-const editTaskField = async (chatId, field, val = null) => {
+const inline_keyboardStatus = ["completed", "pending", "ongoing"].map(
+  (status) => [
+    {
+      text: status,
+      callback_data: JSON.stringify({
+        type: ACTION_TYPE.UPDATE_TASK_FIELD,
+        value: status,
+      }),
+    },
+  ]
+);
+
+const editTaskField = async (chatId, field) => {
   const user = await User.findOne({ chatId });
-  if (!val) {
-    const taskId = user.action.split("-")[1];
-    console.log("test");
-    if (["title", "description", "deadline"].includes(field)) {
-      user.action = `edit_task-${taskId}-${field}`;
-      await user.save();
-    } else if (field == "priority") {
-      bot.sendMessage(chatId, "Yangilanayotgan priorityni tanlang:", {
-        reply_markup: {
-          remove_keyboard: true,
-          inline_keyboard: inline_keyboardPriority,
-        },
-      });
-    } else if (field == "status") {
-      bot.sendMessage(chatId, "status");
-    } else if (field == "category") {
-      bot.sendMessage(chatId, "status");
-    }
-  } else {
+
+  const taskId = user.action.split("-")[1];
+
+  user.action = `edit_task-${taskId}-${field}`;
+  await user.save();
+
+  if (["title", "description", "deadline"].includes(field)) {
+    bot.sendMessage(chatId, `Tangilanayotgan "${field}" maydonini kiriting: `);
+  } else if (field == "priority") {
+    bot.sendMessage(chatId, "Yangilanayotgan priorityni tanlang:", {
+      reply_markup: {
+        remove_keyboard: true,
+        inline_keyboard: inline_keyboardPriority,
+      },
+    });
+  } else if (field == "status") {
+    bot.sendMessage(chatId, "Yangilanayotgan statusni tanlang:", {
+      reply_markup: {
+        remove_keyboard: true,
+        inline_keyboard: inline_keyboardStatus,
+      },
+    });
+  } else if (field == "category") {
+    const categories = await Promise.all(
+      user.category.map(async (cat) => await Category.findById(cat))
+    );
+
+    const inline_keyboardCategory = categories.map((category) => [
+      {
+        text: category.name,
+        callback_data: JSON.stringify({
+          type: ACTION_TYPE.UPDATE_TASK_FIELD,
+          value: category.name,
+        }),
+      },
+    ]);
+
+    bot.sendMessage(chatId, "Yangilanayotgan kategoriyani tanlang:", {
+      reply_markup: {
+        remove_keyboard: true,
+        inline_keyboard: inline_keyboardCategory,
+      },
+    });
   }
+};
+
+const updateField = async (chatId, value) => {
+  const user = await User.findOne({ chatId });
+  const [_, taskId, field] = user.action.split("-");
+
+  if (field == "category") {
+    const category = await Category.findOne({ name: value });
+    await Task.findByIdAndUpdate(taskId, { category: category._id });
+  } else {
+    await Task.findByIdAndUpdate(taskId, { [field]: value });
+  }
+
+  user.action = "category";
+  await user.save();
+  bot.sendMessage(chatId, "Vazifa yangilandi.");
 };
 
 module.exports = {
@@ -262,4 +314,5 @@ module.exports = {
   deleteTask,
   editTask,
   editTaskField,
+  updateField,
 };

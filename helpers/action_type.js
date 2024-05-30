@@ -9,5 +9,5 @@ exports.ACTION_TYPE = {
   EDIT_TASK: "et",
   DELETE_TASK: "dt",
   EDIT_TASK_FIELD: "etf",
-  UPDATE_TASK_PRIORITY: "utp",
+  UPDATE_TASK_FIELD: "utf",
 };

@@ -100,7 +100,7 @@ const getCategory = async (chatId, categoryId) => {
     user: user._id,
     category: categoryId,
   });
-  console.log(tasks);
+  // console.log(tasks);
   const list = tasks.map((task) => [
     {
       text: task.title,

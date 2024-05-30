@@ -11,6 +11,7 @@ const {
   deleteTask,
   editTask,
   editTaskField,
+  updateField,
 } = require("./controller/task.controller");
 const { ACTION_TYPE } = require("./helpers/action_type");
 
@@ -52,5 +53,8 @@ bot.on("callback_query", async (query) => {
       break;
     case ACTION_TYPE.EDIT_TASK_FIELD:
       editTaskField(chatId, data.field);
+      break;
+    case ACTION_TYPE.UPDATE_TASK_FIELD:
+      updateField(chatId, data.value);
   }
 });
