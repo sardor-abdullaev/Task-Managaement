@@ -12,6 +12,13 @@ const addTask = async (chatId) => {
     _id: { $in: user.category },
   });
   // console.log(categories);
+  if (!categories.length) {
+    bot.sendMessage(
+      chatId,
+      "Kategoriyalar ro'yxati hozircha bo'sh.\n/addcategory - Kategoriya qo'shish"
+    );
+    return;
+  }
 
   const inline_keyboard = categories.map((category) => [
     {
@@ -42,7 +49,7 @@ const steps = {
   },
   description: {
     action: "new_task-deadline",
-    text: "Vazifa deadline vaqtini YYYY-MM-DDTHH:mm:ss formatda kiriting:\nNamuna: 2024-05-29T13:51:50",
+    text: "Vazifa deadline kamida 1 soat keyingi vaqtini YYYY-MM-DDTHH:mm:ss formatda kiriting:\nNamuna: 2024-05-29T13:51:50",
   },
   deadline: {
     action: "new_task-priority",
@@ -91,44 +98,6 @@ const add_task_next = async (chatId, value, slug, categoryId = null) => {
         reply_markup: {
           remove_keyboard: true,
           inline_keyboard,
-          // inline_keyboard: [
-          //   [
-          //     {
-          //       text: "critical",
-          //       callback_data: JSON.stringify({
-          //         type: ACTION_TYPE.CHOOSE_TASK_PRIORITY,
-          //         status: "critical",
-          //       }),
-          //     },
-          //   ],
-          //   [
-          //     {
-          //       text: "high",
-          //       callback_data: JSON.stringify({
-          //         type: ACTION_TYPE.CHOOSE_TASK_PRIORITY,
-          //         status: "high",
-          //       }),
-          //     },
-          //   ],
-          //   [
-          //     {
-          //       text: "medium",
-          //       callback_data: JSON.stringify({
-          //         type: ACTION_TYPE.CHOOSE_TASK_PRIORITY,
-          //         status: "medium",
-          //       }),
-          //     },
-          //   ],
-          //   [
-          //     {
-          //       text: "low",
-          //       callback_data: JSON.stringify({
-          //         type: ACTION_TYPE.CHOOSE_TASK_PRIORITY,
-          //         status: "low",
-          //       }),
-          //     },
-          //   ],
-          // ],
         },
       });
     } else {
@@ -143,34 +112,57 @@ const add_task_next = async (chatId, value, slug, categoryId = null) => {
 const getTask = async (chatId, taskId) => {
   const task = await Task.findById(taskId).populate("category");
   // console.log(task);
-  bot.sendMessage(
-    chatId,
-    `Title: <b>${task.title}</b>\nCategory: <b>${task.category.name}</b>\nDescription: <b>${task.description}</b>\nPriority: <b>${task.priority}</b>\nStatus: <b>${task.status}\nDeadline: <b>${task.deadline}</b></b>`,
-    {
-      parse_mode: "HTML",
-      reply_markup: {
-        remove_keyboard: true,
-        inline_keyboard: [
-          [
-            {
-              text: "📝Tahrirlash",
-              callback_data: JSON.stringify({
-                type: ACTION_TYPE.EDIT_TASK,
-                task_id: taskId,
-              }),
-            },
-            {
-              text: "🗑O'chirish",
-              callback_data: JSON.stringify({
-                type: ACTION_TYPE.DELETE_TASK,
-                task_id: taskId,
-              }),
-            },
+  if (task) {
+    bot.sendMessage(
+      chatId,
+      `Title: <b>${task.title ?? undefined}</b>\nCategory: <b>${
+        task.category.name ?? undefined
+      }</b>\nDescription: <b>${
+        task.description ?? undefined
+      }</b>\nPriority: <b>${task.priority ?? undefined}</b>\nStatus: <b>${
+        task.status ?? undefined
+      }\nDeadline: <b>${task.deadline ?? undefined}</b></b>`,
+      {
+        parse_mode: "HTML",
+        reply_markup: {
+          remove_keyboard: true,
+          inline_keyboard: [
+            [
+              {
+                text: "📝Tahrirlash",
+                callback_data: JSON.stringify({
+                  type: ACTION_TYPE.EDIT_TASK,
+                  task_id: taskId,
+                }),
+              },
+              {
+                text: "🗑O'chirish",
+                callback_data: JSON.stringify({
+                  type: ACTION_TYPE.DELETE_TASK,
+                  task_id: taskId,
+                }),
+              },
+            ],
           ],
-        ],
-      },
-    }
-  );
+        },
+      }
+    );
+  } else {
+    bot.sendMessage(chatId, "Vazifa topilmadi yoki o'chirilgan!");
+  }
+};
+
+const getAllTasks = async (chatId) => {
+  const user = await User.findOne({ chatId });
+  const tasks = await Task.find({ user: user._id }).sort({ deadline: 1 });
+  if (tasks.length) {
+    tasks.forEach((task) => getTask(chatId, task._id));
+  } else {
+    bot.sendMessage(
+      chatId,
+      "Vazifalar ro'yxati hozircha bo'sh. Birinchi navbatda agar kategoriya yo'q bo'lsa yaratishingiz kerak. Keyin shu kategoriyaga vazifa qo'shiladi.\n/addcategory - Kategoriya qoshish\n/addtask - Vazifa qo'shish"
+    );
+  }
 };
 
 const deleteTask = async (chatId, taskId, msgId) => {
@@ -231,17 +223,15 @@ const inline_keyboardPriority = ["critical", "high", "medium", "low"].map(
   ]
 );
 
-const inline_keyboardStatus = ["completed", "pending", "ongoing"].map(
-  (status) => [
-    {
-      text: status,
-      callback_data: JSON.stringify({
-        type: ACTION_TYPE.UPDATE_TASK_FIELD,
-        value: status,
-      }),
-    },
-  ]
-);
+const inline_keyboardStatus = ["completed", "ongoing"].map((status) => [
+  {
+    text: status,
+    callback_data: JSON.stringify({
+      type: ACTION_TYPE.UPDATE_TASK_FIELD,
+      value: status,
+    }),
+  },
+]);
 
 const editTaskField = async (chatId, field) => {
   const user = await User.findOne({ chatId });
@@ -252,7 +242,12 @@ const editTaskField = async (chatId, field) => {
   await user.save();
 
   if (["title", "description", "deadline"].includes(field)) {
-    bot.sendMessage(chatId, `Tangilanayotgan "${field}" maydonini kiriting: `);
+    bot.sendMessage(
+      chatId,
+      field == "deadline"
+        ? "Yangilanayotgan 'deadline' maydonini \nYYYY-MM-DDTHH:mm:ss formatda kiriting:\nNamuna: 2024-05-29T13:51:50"
+        : `Yangilanayotgan "${field}" maydonini kiriting`
+    );
   } else if (field == "priority") {
     bot.sendMessage(chatId, "Yangilanayotgan priorityni tanlang:", {
       reply_markup: {
@@ -307,6 +302,57 @@ const updateField = async (chatId, value) => {
   bot.sendMessage(chatId, "Vazifa yangilandi.");
 };
 
+let oneHourMsgSent = false;
+let oneDayMsgSent = false;
+
+const checkTasks = async () => {
+  await Task.findOneAndUpdate(
+    { deadline: { $lte: Date.now() } },
+    { status: "expired" }
+  );
+
+  const tasks = await Task.find({
+    status: { $in: ["pending", "ongoing"] },
+  });
+  if (!tasks.length) return;
+
+  tasks.forEach(async (task) => {
+    const currentDate = new Date();
+    const time = task.deadline.getTime() - currentDate.getTime();
+
+    const user = await User.findById(task.user);
+
+    if (!oneHourMsgSent && time < 1000 * 60 * 30) {
+      bot.sendMessage(user.chatId, "Sizda yarim soatdan kamroq vaqt qoldi.");
+      getTask(user.chatId, task._id);
+      oneHourMsgSent = true;
+      return;
+    } else if (
+      !oneDayMsgSent &&
+      time > 1000 * 60 * 30 &&
+      time < 1000 * 60 * 60 * 24
+    ) {
+      bot.sendMessage(user.chatId, "Sizda bir kundan kamroq vaqt qoldi.");
+      getTask(user.chatId, task._id);
+      oneDayMsgSent = true;
+      return;
+    }
+  });
+};
+
+const deleteDraftTasks = async (chatId) => {
+  const user = await User.findOne({ chatId });
+  const tasks = await Task.find({ user: user._id, status: "0" }).select(["id"]);
+
+  await Promise.all(
+    tasks.map(async (task) => {
+      await Task.findOneAndDelete(task);
+    })
+  );
+
+  bot.sendMessage(chatId, "Chala vazifalar o'chirildi.");
+};
+
 module.exports = {
   addTask,
   add_task_next,
@@ -315,4 +361,7 @@ module.exports = {
   editTask,
   editTaskField,
   updateField,
+  getAllTasks,
+  checkTasks,
+  deleteDraftTasks,
 };

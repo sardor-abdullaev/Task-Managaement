@@ -40,13 +40,13 @@ bot.on("callback_query", async (query) => {
       add_task_next(chatId, null, null, data.ct_id);
       break;
     case ACTION_TYPE.CHOOSE_TASK_PRIORITY:
-      add_task_next(chatId, data.status, "priority");
+      add_task_next(chatId, data.priority, "priority");
       break;
     case ACTION_TYPE.SHOW_TASK:
       getTask(chatId, data.task_id);
       break;
     case ACTION_TYPE.DELETE_TASK:
-      deleteTask(chatId, data.task_id);
+      deleteTask(chatId, data.task_id, query.message.message_id);
       break;
     case ACTION_TYPE.EDIT_TASK:
       editTask(chatId, data.task_id);

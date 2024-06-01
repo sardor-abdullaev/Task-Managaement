@@ -1,0 +1,5 @@
+category - Get all categories
+addcategory - Add new category
+tasks - Get all tasks
+addtask - Add new task
+cancel - Delete draft tasks

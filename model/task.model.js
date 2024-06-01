@@ -22,16 +22,16 @@ const taskSchema = new mongoose.Schema({
   status: {
     type: String,
     // required: true,
-    enum: ["completed", "pending", "ongoing", "0"],
+    enum: ["completed", "pending", "ongoing", "0", "expired"],
     default: "0",
   },
   deadline: {
     type: Date,
     // validate: {
     //   message:
-    //     "Kiritilgan vaqt ({VALUE})ni qabul qila olmaymiz./nIltimos kamida 5 minut oldingi vaqtni kiriting.",
+    //     "Kiritilgan vaqt ({VALUE})ni qabul qila olmaymiz./nIltimos kamida 1 soat oldingi vaqtni kiriting.",
     //   validator: function (val) {
-    //     return val >= Date.now() + 1000 * 60 * 5;
+    //     return Date.parse(val) - Date.now() >= 1000 * 60 * 60;
     //   },
     // },
   },

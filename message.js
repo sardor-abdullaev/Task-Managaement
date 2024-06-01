@@ -11,18 +11,22 @@ const {
   addTask,
   add_task_next,
   updateField,
+  getAllTasks,
+  checkTasks,
+  deleteDraftTasks,
 } = require("./controller/task.controller");
 
 bot.on("message", async (msg) => {
   const { first_name, last_name, id: chatId } = msg.from;
   const user = await User.findOne({ chatId });
+  if (!user) {
+    saveUser(first_name, last_name, chatId);
+  }
 
   switch (msg.text) {
     case "/start":
       bot.sendMessage(chatId, "Task Management botiga xush kelibsiz!");
-      if (!user) {
-        saveUser(first_name, last_name, chatId);
-      }
+
       break;
     case "/addcategory":
       addCategory(chatId);
@@ -32,6 +36,13 @@ bot.on("message", async (msg) => {
       break;
     case "/addtask":
       addTask(chatId);
+      break;
+    case "/tasks":
+      getAllTasks(chatId);
+      break;
+    case "/cancel":
+      deleteDraftTasks(chatId);
+      break;
   }
 
   if (msg.text && !msg.text.startsWith("/")) {
@@ -51,5 +62,5 @@ bot.on("message", async (msg) => {
   }
 
   user && (user.action = "category");
-  await user.save();
+  user && (await user.save());
 });
