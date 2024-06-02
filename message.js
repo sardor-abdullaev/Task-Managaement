@@ -25,8 +25,10 @@ bot.on("message", async (msg) => {
 
   switch (msg.text) {
     case "/start":
-      bot.sendMessage(chatId, "Task Management botiga xush kelibsiz!");
-
+      bot.sendMessage(
+        chatId,
+        "Task Management botiga xush kelibsiz!\n/category - Get all categories\n/addcategory - Add new category\n/tasks - Get all tasks\n/addtask - Add new task\n/cancel - Delete draft tasks"
+      );
       break;
     case "/addcategory":
       addCategory(chatId);

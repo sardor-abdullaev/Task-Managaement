@@ -15,7 +15,7 @@ const addTask = async (chatId) => {
   if (!categories.length) {
     bot.sendMessage(
       chatId,
-      "Kategoriyalar ro'yxati hozircha bo'sh.\n/addcategory - Kategoriya qo'shish"
+      "Vazifa qo'shish uchun kamida bitta kategoriya mavjud bo'lishi kerak. Kategoriyalar ro'yxati hozircha bo'sh.\n/addcategory - Kategoriya qo'shish"
     );
     return;
   }
