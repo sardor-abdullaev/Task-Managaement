@@ -302,7 +302,7 @@ const updateField = async (chatId, value) => {
   bot.sendMessage(chatId, "Vazifa yangilandi.");
 };
 
-let oneHourMsgSent = false;
+let halfHourMsgSent = false;
 let oneDayMsgSent = false;
 
 const checkTasks = async () => {
@@ -322,10 +322,10 @@ const checkTasks = async () => {
 
     const user = await User.findById(task.user);
 
-    if (!oneHourMsgSent && time < 1000 * 60 * 30) {
+    if (!halfHourMsgSent && time < 1000 * 60 * 30) {
       bot.sendMessage(user.chatId, "Sizda yarim soatdan kamroq vaqt qoldi.");
       getTask(user.chatId, task._id);
-      oneHourMsgSent = true;
+      halfHourMsgSent = true;
       return;
     } else if (
       !oneDayMsgSent &&

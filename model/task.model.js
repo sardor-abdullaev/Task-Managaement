@@ -29,9 +29,9 @@ const taskSchema = new mongoose.Schema({
     type: Date,
     // validate: {
     //   message:
-    //     "Kiritilgan vaqt ({VALUE})ni qabul qila olmaymiz./nIltimos kamida 1 soat oldingi vaqtni kiriting.",
+    //     "Kiritilgan vaqt ({VALUE})ni qabul qila olmaymiz./nIltimos kamida yarim soat oldingi vaqtni kiriting.",
     //   validator: function (val) {
-    //     return Date.parse(val) - Date.now() >= 1000 * 60 * 60;
+    //     return Date.parse(val) - Date.now() >= 1000 * 60 * 30;
     //   },
     // },
   },
