@@ -12,7 +12,6 @@ const {
   add_task_next,
   updateField,
   getAllTasks,
-  checkTasks,
   deleteDraftTasks,
 } = require("./controller/task.controller");
 

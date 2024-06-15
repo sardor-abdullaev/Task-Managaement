@@ -7,7 +7,7 @@ try {
   require("./message");
   require("./query");
 
-  setInterval(checkTasks, 1000 * 60 * 30);
+  setInterval(checkTasks, 1000 * 5);
 } catch (error) {
   console.log(error);
 }

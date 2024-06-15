@@ -302,9 +302,6 @@ const updateField = async (chatId, value) => {
   bot.sendMessage(chatId, "Vazifa yangilandi.");
 };
 
-let halfHourMsgSent = false;
-let oneDayMsgSent = false;
-
 const checkTasks = async () => {
   await Task.findOneAndUpdate(
     { deadline: { $lte: Date.now() } },
@@ -322,19 +319,21 @@ const checkTasks = async () => {
 
     const user = await User.findById(task.user);
 
-    if (!halfHourMsgSent && time < 1000 * 60 * 30) {
+    if (!task.msgSent.halfHour && time < 1000 * 60 * 30) {
       bot.sendMessage(user.chatId, "Sizda yarim soatdan kamroq vaqt qoldi.");
       getTask(user.chatId, task._id);
-      halfHourMsgSent = true;
+      task.msgSent.halfHour = true;
+      await task.save();
       return;
     } else if (
-      !oneDayMsgSent &&
+      !task.msgSent.oneDay &&
       time > 1000 * 60 * 30 &&
       time < 1000 * 60 * 60 * 24
     ) {
       bot.sendMessage(user.chatId, "Sizda bir kundan kamroq vaqt qoldi.");
       getTask(user.chatId, task._id);
-      oneDayMsgSent = true;
+      task.msgSent.oneDay = true;
+      await task.save();
       return;
     }
   });

@@ -14,21 +14,11 @@ const addCategory = async (chatId) => {
 };
 
 const saveCategory = async (msg) => {
-  // In this code, there is going to be problem when rename category
+  const newCategory = new Category({ name: msg.text.toLowerCase() });
+  await newCategory.save();
+  const categoryId = newCategory._id;
 
-  // 1.Add unique category to DB
-  let categoryId;
-  const category = await Category.findOne({ name: msg.text.toLowerCase() });
-
-  if (category) {
-    categoryId = category._id;
-  } else {
-    const newCategory = new Category({ name: msg.text });
-    await newCategory.save();
-    categoryId = newCategory._id;
-  }
-
-  // 2.Attach category to user
+  // Attach category to user
   const chatId = msg.from.id;
   const user = await User.findOne({ chatId });
   await User.findByIdAndUpdate(user._id, {
